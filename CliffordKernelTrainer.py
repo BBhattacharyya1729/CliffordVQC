@@ -82,8 +82,10 @@ class CliffordOptimizer:
         return solution, solution_fitness
 
 def noisy_kernel_acc(s, M, x_len,noise_model,train_x,test_x,train_y,test_y):
-    f = lambda x: [i.data for i in noisy_states(s=s, M=M, x_len=x_len,X=x,noise_model=noise_model)]
-    q = QSVM(f,train_x,train_y,matrix=True)
+    encoder = string_to_circuit(s,M,x_len)[0]
+    f = lambda x: [encoder.assign_parameters(X[:encoder.num_parameters]) for X in x]
+   
+    q = noisy_QSVM(f,train_x,train_y,noise=noise_model)
     
     train_pred  = q.predict(train_x)
     train_acc =  accuracy_metric(train_pred, train_y)
