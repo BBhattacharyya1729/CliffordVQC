@@ -79,8 +79,8 @@ class Classifier:
         return state
     
     def get_prediction(self,data,parameters,noise=None,clifford=False):
-        predictions = []    
         if(noise == None):
+            predictions = []    
             state = self.get_state(data,parameters,clifford)
             for i in state:
                 s=0
@@ -88,13 +88,22 @@ class Classifier:
                     s+=(abs(v) ** 2 )* (-1)**list(bin(j)[2:]).count('1') 
                 predictions.append(s.real)
         else:
-            state = noisy_states(s=self.bitstring, M=self.nqubits, x_len=self.x_len,X=data,noise_model=noise)
-            op = Operator(EfficientSU2(num_qubits=self.nqubits,reps=self.depth,su2_gates=['rx','ry','rz'],entanglement='linear').assign_parameters(parameters))
-            state = [s.evolve(op) for s in state]
+            encoder = string_to_circuit(self.bitstring, self.nqubits, self.x_len)[0]
+            circuits = [encoder.assign_parameters(x[:encoder.num_parameters]) for x in X]
+            layer = EfficientSU2(num_qubits=self.nqubits,reps=self.depth,su2_gates=['rx','ry','rz'],entanglement='linear').assign_parameters(parameters)
+            circuits = [c.compose(layer) for c in circuits]
+            [c.save_density_matrix() for c in circuits]
             Z = SparsePauliOp('Z' * self.nqubits)
-            for i in state:
-                predictions.append(i.expectation_value(Z).real)
-        return predictions
+            noisy_simulator = AerSimulator(method='density_matrix', noise_model = noise_model)
+            return [noisy_simulator.run(c).result().data()['density_matrix'].expectation_value(Z).real for c in circuits]
+            
+        #     state = noisy_states(s=self.bitstring, M=self.nqubits, x_len=self.x_len,X=data,noise_model=noise)
+        #     op = Operator(EfficientSU2(num_qubits=self.nqubits,reps=self.depth,su2_gates=['rx','ry','rz'],entanglement='linear').assign_parameters(parameters))
+        #     state = [s.evolve(op) for s in state]
+        #     Z = SparsePauliOp('Z' * self.nqubits)
+        #     for i in state:
+        #         predictions.append(i.expectation_value(Z).real)
+        # return predictions
     
     def get_loss(self,X,y,parameters,noise=None,callback=None,clifford=False):
         preds = self.get_prediction(X,parameters,noise,clifford)
@@ -102,7 +111,7 @@ class Classifier:
         s=0
         for i,v in enumerate(y):
             s+=(preds[i]-v)**2/len(y)
-        self.iterations+=1
+        #self.iterations+=1
         if(callback != None):
             callback(parameters,s)
         return s
@@ -134,10 +143,15 @@ class Classifier:
             history['cost_list'].append(loss)
         
         def cost(parameters):
+            self.iterations+=1
             loss = self.get_loss(X,y,parameters,noise=noise,callback=callback,clifford=False)
             if(self.iterations % 100==0):
                     print("Iterations " + str(self.iterations),file=open(log_file, 'a'))
                     print("Loss " + str(loss),file=open(log_file, 'a'))
+                    if(noise != None):
+                        true_loss = self.get_loss(X,y,parameters,noise=None,callback=callback,clifford=False)
+                        print("True Loss " + str(loss),file=open(log_file, 'a'))
+                  
                 
             return loss
         
