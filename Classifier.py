@@ -40,10 +40,10 @@ def BayesianOptimizer(fun,num_params,samples,iterations,save_dir,name):
     config["output_data_file"] = save_dir + "/"+name+"_hypermapper_output.csv"
     with open(hypermapper_config_path, "w") as config_file:
         json.dump(config, config_file, indent=4)
-    stdout=sys.stdout
-    with open(save_dir+"/"+name+'_optimizer_log.txt', 'w') as sys.stdout:
-        hypermapper.optimizer.optimize(hypermapper_config_path,fun)
-    sys.stdout = stdout
+    #stdout=sys.stdout
+    #with open(save_dir+"/"+name+'_optimizer_log.txt', 'w') as sys.stdout:
+    hypermapper.optimizer.optimize(hypermapper_config_path,fun)
+    #sys.stdout = stdout
     
     fun_ev = np.inf
     x = None
@@ -87,6 +87,7 @@ class Classifier:
                 for j,v in enumerate(i):
                     s+=(abs(v) ** 2 )* (-1)**list(bin(j)[2:]).count('1') 
                 predictions.append(s.real)
+            return predictions
         else:
             encoder = string_to_circuit(self.bitstring, self.nqubits, self.x_len)[0]
             circuits = [encoder.assign_parameters(x[:encoder.num_parameters]) for x in X]

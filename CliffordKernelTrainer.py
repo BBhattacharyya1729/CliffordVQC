@@ -32,13 +32,13 @@ class CliffordOptimizer:
         return [-weight* (1+acc**2),acc]
     
     def on_generation(self,ga_instance):
-        print(f"Generation = {self.ga_instance.generations_completed}",file=open(self.log_file, 'a'))
-        print(f"Fitness    = {self.ga_instance.best_solution(pop_fitness=self.ga_instance.last_generation_fitness)[1]}",file=open(self.log_file, 'a'))
-        print(f"Change     = {self.ga_instance.best_solution(pop_fitness=self.ga_instance.last_generation_fitness)[1] - self.last_fitness}",file=open(self.log_file, 'a'))
+        print(f"Generation = {self.ga_instance.generations_completed}",file=open(self.log_file, 'a', encoding='utf-8'))
+        print(f"Fitness    = {self.ga_instance.best_solution(pop_fitness=self.ga_instance.last_generation_fitness)[1]}",file=open(self.log_file, 'a',encoding='utf-8'))
+        print(f"Change     = {self.ga_instance.best_solution(pop_fitness=self.ga_instance.last_generation_fitness)[1] - self.last_fitness}",file=open(self.log_file, 'a', encoding='utf-8'))
         if(self.ga_instance.generations_completed % 5 == 0):
             qc=string_to_circuit(self.ga_instance.best_solution()[0],self.M,self.x_len)[0]
-            print(qc.draw(),file=open(self.log_file, 'a'))
-            print("--------------------",file=open(self.log_file, 'a'))
+            print((qc.draw()),file=open(self.log_file, 'a', encoding='utf-8'))
+            print("--------------------",file=open(self.log_file, 'a', encoding='utf-8'))
         self.last_fitness = ga_instance.best_solution(pop_fitness=ga_instance.last_generation_fitness)[1]
     
 
