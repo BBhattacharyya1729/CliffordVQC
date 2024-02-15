@@ -40,10 +40,10 @@ def BayesianOptimizer(fun,num_params,samples,iterations,save_dir,name):
     config["output_data_file"] = save_dir + "/"+name+"_hypermapper_output.csv"
     with open(hypermapper_config_path, "w") as config_file:
         json.dump(config, config_file, indent=4)
-    #stdout=sys.stdout
-    #with open(save_dir+"/"+name+'_optimizer_log.txt', 'w') as sys.stdout:
-    hypermapper.optimizer.optimize(hypermapper_config_path,fun)
-    #sys.stdout = stdout
+    stdout=sys.stdout
+    with open(save_dir+"/"+name+'_optimizer_log.txt', 'w') as sys.stdout:
+        hypermapper.optimizer.optimize(hypermapper_config_path,fun)
+    sys.stdout = stdout
     
     fun_ev = np.inf
     x = None
@@ -90,12 +90,12 @@ class Classifier:
             return predictions
         else:
             encoder = string_to_circuit(self.bitstring, self.nqubits, self.x_len)[0]
-            circuits = [encoder.assign_parameters(x[:encoder.num_parameters]) for x in X]
-            layer = EfficientSU2(num_qubits=self.nqubits,reps=self.depth,su2_gates=['rx','ry','rz'],entanglement='linear').assign_parameters(parameters)
+            circuits = [encoder.assign_parameters(x[:encoder.num_parameters]) for x in data]
+            layer = EfficientSU2(num_qubits=self.nqubits,reps=self.depth,su2_gates=['rx','ry','rz'],entanglement='linear').assign_parameters(parameters).decompose()
             circuits = [c.compose(layer) for c in circuits]
             [c.save_density_matrix() for c in circuits]
             Z = SparsePauliOp('Z' * self.nqubits)
-            noisy_simulator = AerSimulator(method='density_matrix', noise_model = noise_model)
+            noisy_simulator = AerSimulator(method='density_matrix', noise_model = noise)
             return [noisy_simulator.run(c).result().data()['density_matrix'].expectation_value(Z).real for c in circuits]
             
         #     state = noisy_states(s=self.bitstring, M=self.nqubits, x_len=self.x_len,X=data,noise_model=noise)
@@ -150,8 +150,8 @@ class Classifier:
                     print("Iterations " + str(self.iterations),file=open(log_file, 'a'))
                     print("Loss " + str(loss),file=open(log_file, 'a'))
                     if(noise != None):
-                        true_loss = self.get_loss(X,y,parameters,noise=None,callback=callback,clifford=False)
-                        print("True Loss " + str(loss),file=open(log_file, 'a'))
+                        true_loss = self.get_loss(X,y,parameters,noise=None,callback=None,clifford=False)
+                        print("True Loss " + str(true_loss),file=open(log_file, 'a'))
                   
                 
             return loss
